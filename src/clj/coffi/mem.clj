@@ -2239,7 +2239,8 @@
         (register-new-struct-serialization   coffi-typename struct-layout)
         `(do
            ~(generate-struct-type typename typed-symbols)
-           (defmethod c-layout ~coffi-typename [~'_] (c-layout ((requiring-resolve 'coffi.layout/with-c-layout) ~struct-layout-raw)))
+           (let [memory-layout# (c-layout ((requiring-resolve 'coffi.layout/with-c-layout) ~struct-layout-raw))]
+             (defmethod c-layout ~coffi-typename [~'_] memory-layout#))
            (register-new-struct-deserialization ~coffi-typename ((requiring-resolve 'coffi.layout/with-c-layout) ~struct-layout-raw))
            (register-new-struct-serialization   ~coffi-typename ((requiring-resolve 'coffi.layout/with-c-layout) ~struct-layout-raw))
            (defmethod deserialize-from ~coffi-typename ~[segment-form '_type]
