@@ -314,9 +314,12 @@
                  (mem/primitive-type type)
                  `(mem/serialize* ~sym ~type-sym ~arena)
 
+                 ;; type is a valid ::mem/type at macroexpansion time, which should make it safe to use it in size-of and align-of. however, the spec is not perfect, and c-layout might not be defined for type at macroexpansion time so we'll conditionally try to obtain size and align of the type to be safe
                  :else
-                 (let [alloc-sym (with-meta (gensym "alloc") {:tag 'java.lang.foreign.MemorySegment})]
-                   `(let [~alloc-sym (mem/alloc ~(mem/size-of type) ~(mem/align-of type) ~arena)]
+                 (let [alloc-sym (with-meta (gensym "alloc") {:tag 'java.lang.foreign.MemorySegment})
+                       size-of  (if-some [v (try (mem/size-of type) (catch Exception _ nil))] v `(mem/size-of ~type))
+                       align-of (if-some [v (try (mem/align-of type) (catch Exception _ nil))] v `(mem/align-of ~type))]
+                   `(let [~alloc-sym (mem/alloc ~size-of ~align-of ~arena)]
                       ~(if (get-method mem/generate-serialize type)
                          (mem/generate-serialize type sym 0 alloc-sym)
                          `(mem/serialize-into ~sym ~type ~alloc-sym ~arena))
