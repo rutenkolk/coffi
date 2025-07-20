@@ -42,6 +42,24 @@
 
 (set! *warn-on-reflection* true)
 
+(def ^:private primitive-tag?
+  '#{byte bytes short shorts int ints long longs
+     float floats double doubles
+     bool bools char chars})
+
+(defmacro once-only
+  {:style/indent [:defn]
+   :private true}
+  [[& names] & body]
+  (let [gensyms (repeatedly (count names) gensym)]
+    `(let [~@(interleave gensyms (repeat (count names) `(gensym)))]
+       `(let [~~@(mapcat #(-> (if (primitive-tag? (:tag (meta %2)))
+                                [%1 ``(~'~(:tag (meta %2)) ~~%2)]
+                                [`(with-meta ~%1 {:tag '~(:tag (meta %2))}) %2]))
+                         gensyms names)]
+          ~(let [~@(mapcat #(-> [(with-meta %1 {}) %2]) names gensyms)]
+             ~@body)))))
+
 (defn confined-arena
   "Constructs a new arena for use only in this thread.
 
@@ -97,6 +115,17 @@
   "Allocates `size` bytes.
 
   If an `arena` is provided, the allocation will be reclaimed when it is closed."
+  {:inline
+   (fn alloc-inline
+     ([size]
+      (once-only [^long size]
+        `(.allocate ^Arena (Arena/ofAuto) ~size)))
+     ([size arena]
+      (once-only [^long size ^Arena arena]
+        `(.allocate ~arena ~size)))
+     ([size alignment arena]
+      (once-only [^long size ^long alignment ^Arena arena]
+        `(.allocate ~arena ~size ~alignment))))}
   (^MemorySegment [size] (alloc size (auto-arena)))
   (^MemorySegment [size arena] (.allocate ^Arena arena (long size)))
   (^MemorySegment [size alignment arena] (.allocate ^Arena arena (long size) (long alignment))))
@@ -286,24 +315,6 @@
 (def ^long pointer-alignment
   "The alignment in bytes of a c-sized pointer."
   (.byteAlignment pointer-layout))
-
-(def ^:private primitive-tag?
-  '#{byte bytes short shorts int ints long longs
-     float floats double doubles
-     bool bools char chars})
-
-(defmacro once-only
-  {:style/indent [:defn]
-   :private true}
-  [[& names] & body]
-  (let [gensyms (repeatedly (count names) gensym)]
-    `(let [~@(interleave gensyms (repeat (count names) `(gensym)))]
-       `(let [~~@(mapcat #(-> (if (primitive-tag? (:tag (meta %2)))
-                                [%1 ``(~'~(:tag (meta %2)) ~~%2)]
-                                [`(with-meta ~%1 {:tag '~(:tag (meta %2))}) %2]))
-                         gensyms names)]
-          ~(let [~@(mapcat #(-> [(with-meta %1 {}) %2]) names gensyms)]
-             ~@body)))))
 
 (defn read-byte
   "Reads a [[byte]] from the `segment`, at an optional `offset`."
