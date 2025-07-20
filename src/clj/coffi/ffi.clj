@@ -393,7 +393,7 @@
                                 (deserialize-segment expr)))
 
             wrap-arena (fn [expr]
-                           `(with-open [~arena (mem/confined-arena)]
+                           `(with-open [~arena (mem/thread-local-arena)]
                               ~expr))
             wrap-fn (fn [call needs-arena?]
                       `(fn [~@(if const-args? arg-syms ['& args-sym])]
@@ -429,12 +429,12 @@
   [downcall arg-types ret-type]
   (if (mem/primitive-type ret-type)
     (fn native-fn [& args]
-      (with-open [arena (mem/confined-arena)]
+      (with-open [arena (mem/thread-local-arena)]
         (mem/deserialize*
          (apply downcall (map #(mem/serialize %1 %2 arena) args arg-types))
          ret-type)))
     (fn native-fn [& args]
-      (with-open [arena (mem/confined-arena)]
+      (with-open [arena (mem/thread-local-arena)]
         (mem/deserialize-from
          (apply downcall (mem/arena-allocator arena)
                 (map #(mem/serialize %1 %2 arena) args arg-types))
