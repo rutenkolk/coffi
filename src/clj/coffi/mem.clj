@@ -176,13 +176,14 @@
 ; thread local allocation, inspired by https://bugs.openjdk.org/browse/JDK-8348189
 
 (def ^:private thread-local-buffer-initial-size 512)
-(def ^:private thread-local-confined-arena (terminating-thread-local (confined-arena) (fn [arena] (.close ^Arena arena))))
-(def ^:private thread-local-buffer (thread-local (.allocate ^Arena @thread-local-confined-arena ^long thread-local-buffer-initial-size)))
+(def ^:private thread-local-backing-arena (terminating-thread-local (confined-arena) (fn [arena] (.close ^Arena arena))))
+(defprotocol IArenaGet (^Arena arena-get [this]))
 (deftype ThreadLocalConfinedArena
     [^:unsynchronized-mutable ^SegmentAllocator allocator
-     ^Arena arena
+     ^:unsynchronized-mutable ^Arena arena
      ^:unsynchronized-mutable ^MemorySegment buffer
      ^:unsynchronized-mutable ^long allocCount
+     ^:unsynchronized-mutable ^int nestingLevels
      ^:unsynchronized-mutable ^boolean isBufferTooSmall]
   Arena
   (^MemorySegment allocate [this ^long byteSize ^long byteAlignment]
@@ -200,16 +201,32 @@
   (scope [this]
     (.scope arena))
   (close [this]
-    (if isBufferTooSmall
-      (let [new-size (* 2 thread-local-buffer-initial-size (unchecked-inc-int (unchecked-divide-int allocCount thread-local-buffer-initial-size)))
-            new-arena (confined-arena)
-            new-buffer (.allocate ^Arena new-arena ^long new-size)]
-        (.doSet ^Settable thread-local-confined-arena new-arena)
-        (.doSet ^Settable thread-local-buffer new-buffer)
-        (.close ^Arena arena)))))
+    (set! nestingLevels (unchecked-add-int nestingLevels -1))
+    (if (= 0 nestingLevels)
+      (do
+        (if isBufferTooSmall
+          (let [new-size (* 2 thread-local-buffer-initial-size (unchecked-inc-int (unchecked-divide-int allocCount thread-local-buffer-initial-size)))
+                new-arena (confined-arena)
+                new-buffer (.allocate ^Arena new-arena ^long new-size)]
+            (.doSet ^Settable thread-local-backing-arena new-arena)
+            (.close ^Arena arena)
+            (set! arena new-arena)
+            (set! buffer new-buffer)
+            (set! isBufferTooSmall (boolean false))))
+        (set! allocCount 0)
+        (set! allocator (SegmentAllocator/slicingAllocator buffer)))))
+  IArenaGet
+  (arena-get [this]
+    (set! nestingLevels (unchecked-inc-int nestingLevels))
+    this))
+
+(def ^:private thread-local-confined-arena
+  (thread-local (let [arena @thread-local-backing-arena
+                      buffer (.allocate ^Arena arena ^long thread-local-buffer-initial-size)]
+                  (ThreadLocalConfinedArena. (SegmentAllocator/slicingAllocator buffer) arena buffer 0 0 false))))
 
 (defn thread-local-arena []
-  (ThreadLocalConfinedArena. (SegmentAllocator/slicingAllocator @thread-local-buffer) @thread-local-confined-arena @thread-local-buffer 0 false))
+  (arena-get @thread-local-confined-arena))
 
 (defn alloc
   "Allocates `size` bytes.
