@@ -225,7 +225,7 @@
                       buffer (.allocate ^Arena arena ^long thread-local-buffer-initial-size)]
                   (ThreadLocalConfinedArena. (SegmentAllocator/slicingAllocator buffer) arena buffer 0 0 false))))
 
-(defn thread-local-arena []
+(defn ^Arena thread-local-arena []
   (arena-get @thread-local-confined-arena))
 
 (defn alloc
