@@ -61,7 +61,6 @@
 (def ^:private load-instructions
   "Mapping from primitive types to the instruction used to load them onto the stack."
   {::mem/byte :bload
-   ::mem/boolean :iload ; as per jvms 2.3.4 it should be iload. hmm
    ::mem/short :sload
    ::mem/int :iload
    ::mem/long :lload
@@ -73,7 +72,6 @@
 (def ^:private prim-classes
   "Mapping from primitive types to their box classes."
   {::mem/byte Byte
-   ::mem/boolean Boolean
    ::mem/short Short
    ::mem/int Integer
    ::mem/long Long
@@ -109,7 +107,6 @@
 (def ^:private unbox-fn-for-type
   "Map from type name to the name of its unboxing function."
   {::mem/byte "byteValue"
-   ::mem/boolean "booleanValue"
    ::mem/short "shortValue"
    ::mem/int "intValue"
    ::mem/long "longValue"
