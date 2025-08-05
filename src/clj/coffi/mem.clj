@@ -332,31 +332,6 @@
   ([^MemorySegment segment ^long offset]
    (.get segment ^ValueLayout$OfByte byte-layout offset)))
 
-(defn read-boolean
-  "Reads a [[boolean]] from the `segment`, at an optional `offset`.
-
-  If `byte-order` is not provided, it defaults to [[native-endian]]."
-  {:inline
-   (fn read-boolean-inline
-     ([segment]
-      `(let [segment# ~segment]
-         (.get ^MemorySegment segment# ^ValueLayout$OfBoolean boolean-layout 0)))
-     ([segment offset]
-      `(let [segment# ~segment
-             offset# ~offset]
-         (.get ^MemorySegment segment# ^ValueLayout$OfBoolean boolean-layout offset#)))
-     ([segment offset byte-order]
-      `(let [segment# ~segment
-             offset# ~offset
-             byte-order# ~byte-order]
-         (.get ^MemorySegment segment# (.withOrder ^ValueLayout$OfBoolean boolean-layout ^ByteOrder byte-order#) offset#))))}
-  ([^MemorySegment segment]
-   (.get segment ^ValueLayout$OfBoolean boolean-layout 0))
-  ([^MemorySegment segment ^long offset]
-   (.get segment ^ValueLayout$OfBoolean boolean-layout offset))
-  ([^MemorySegment segment ^long offset ^ByteOrder byte-order]
-   (.get segment (.withOrder ^ValueLayout$OfBoolean boolean-layout byte-order) offset)))
-
 (defn read-short
   "Reads a [[short]] from the `segment`, at an optional `offset`.
 
@@ -431,6 +406,72 @@
    (.get segment ^ValueLayout$OfLong long-layout offset))
   (^long [^MemorySegment segment ^long offset ^ByteOrder byte-order]
    (.get segment (.withOrder ^ValueLayout$OfLong long-layout byte-order) offset)))
+
+(defn read-bool-8
+  "Reads a [[bool]] of 8 bits (byte size of 1) from the `segment`, at an optional `offset`."
+  {:inline
+   (fn read-bool-8-inline
+     ([segment] `(not (zero? (read-byte ~segment))))
+     ([segment offset] `(not (zero? (read-byte ~segment ~offset)))))}
+  ([^MemorySegment segment] (not (zero? (read-byte segment))))
+  ([^MemorySegment segment ^long offset] (not (zero? (read-byte segment offset)))))
+
+(defn read-bool-16
+  "Reads a [[bool]] of 16 bits (byte size of 2) from the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn read-read-bool-16-inline
+     ([segment]
+      `(not (zero? (read-short ~segment))))
+     ([segment offset]
+      `(not (zero? (read-short ~segment ~offset))))
+     ([segment offset byte-order]
+      `(not (zero? (read-short ~segment ~offset ~byte-order)))))}
+  ([^MemorySegment segment]
+   (not (zero? (read-short segment))))
+  ([^MemorySegment segment ^long offset]
+   (not (zero? (read-short segment offset))))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order]
+   (not (zero? (read-short segment offset byte-order)))))
+
+(defn read-bool-32
+  "Reads a [[bool]] of 32 bits (byte size of 4) from the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn read-read-bool-32-inline
+     ([segment]
+      `(not (zero? (read-int ~segment))))
+     ([segment offset]
+      `(not (zero? (read-int ~segment ~offset))))
+     ([segment offset byte-order]
+      `(not (zero? (read-int ~segment ~offset ~byte-order)))))}
+  ([^MemorySegment segment]
+   (not (zero? (read-int segment))))
+  ([^MemorySegment segment ^long offset]
+   (not (zero? (read-int segment offset))))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order]
+   (not (zero? (read-int segment offset byte-order)))))
+
+(defn read-bool-64
+  "Reads a [[bool]] of 64 bits (byte size of 8) from the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn read-read-bool-64-inline
+     ([segment]
+      `(not (zero? (read-long ~segment))))
+     ([segment offset]
+      `(not (zero? (read-long ~segment ~offset))))
+     ([segment offset byte-order]
+      `(not (zero? (read-long ~segment ~offset ~byte-order)))))}
+  ([^MemorySegment segment]
+   (not (zero? (read-long segment))))
+  ([^MemorySegment segment ^long offset]
+   (not (zero? (read-long segment offset))))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order]
+   (not (zero? (read-long segment offset byte-order)))))
 
 (defn read-char
   "Reads a [[char]] from the `segment`, at an optional `offset`."
@@ -1124,6 +1165,8 @@
   [type]
   (contains? primitive-types (type-dispatch type)))
 
+(defn- throw-illegal-bool! [] (throw IllegalArgumentException _ "encountered bool type without explicit size! use e.g. [::mem/bool 8] or [::mem/bool 32] instead."))
+
 (defmulti primitive-type
   "Gets the primitive type that is used to pass as an argument for the `type`.
 
@@ -1148,6 +1191,11 @@
 (defmethod primitive-type ::boolean
   [_type]
   ::boolean)
+
+(defmethod primitive-type ::bool [type]
+  (if (sequential? type)
+    (case (second type) 8 ::byte 16 ::short 32 ::int 64 ::long)
+    (throw-illegal-bool!)))
 
 (defmethod primitive-type ::short
   [_type]
@@ -1203,6 +1251,11 @@
   (if (sequential? type)
     (.withOrder boolean-layout ^ByteOrder (second type))
     boolean-layout))
+
+(defmethod c-layout ::bool [type]
+  (if (sequential? type)
+    (case (second type) 8 mem/byte-layout 16 mem/short-layout 32 mem/int-layout 64 mem/long-layout)
+    (throw-illegal-bool!)))
 
 (defmethod c-layout ::short
   [type]
@@ -1463,11 +1516,15 @@
   [segment _type]
   (read-byte segment))
 
-(defmethod deserialize-from ::boolean
+(defmethod deserialize-from ::bool
   [segment type]
   (if (sequential? type)
-    (read-boolean segment 0 (second type))
-    (read-boolean segment)))
+    (case (second type)
+      8 (read-bool-8 segment)
+      16 (read-bool-16 segment)
+      32 (read-bool-32 segment)
+      64 (read-bool-64 segment))
+    (throw-illegal-bool!)))
 
 (defmethod deserialize-from ::short
   [segment type]
@@ -1528,9 +1585,9 @@
   [obj _type]
   obj)
 
-(defmethod deserialize* ::boolean
+(defmethod deserialize* ::bool
   [obj _type]
-  obj)
+  (not (zero? obj)))
 
 (defmethod deserialize* ::short
   [obj _type]
