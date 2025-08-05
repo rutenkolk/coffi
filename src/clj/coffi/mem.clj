@@ -570,29 +570,6 @@
   ([^MemorySegment segment ^long offset value]
    (.set segment ^ValueLayout$OfByte byte-layout offset ^byte value)))
 
-(defn write-boolean
-  "Writes a [[boolean]] to the `segment`, at an optional `offset`.
-
-  If `byte-order` is not provided, it defaults to [[native-endian]]."
-  {:inline
-   (fn write-boolean-inline
-     ([segment value]
-      (once-only [^java.lang.foreign.MemorySegment segment ^boolean value]
-        `(.set ~segment ^ValueLayout$OfBoolean boolean-layout 0 ~value)))
-     ([segment offset value]
-      (once-only [^java.lang.foreign.MemorySegment segment ^long offset ^boolean value]
-        `(.set ~segment ^ValueLayout$OfBoolean boolean-layout ~offset ~value)))
-     ([segment offset byte-order value]
-      (once-only [^java.lang.foreign.MemorySegment segment ^long offset
-                  ^java.nio.ByteOrder byte-order ^boolean value]
-        `(.set ~segment (.withOrder ^ValueLayout$OfBoolean boolean-layout ~byte-order) ~offset ~value))))}
-  ([^MemorySegment segment value]
-   (.set segment ^ValueLayout$OfBoolean boolean-layout 0 ^boolean value))
-  ([^MemorySegment segment ^long offset value]
-   (.set segment ^ValueLayout$OfBoolean boolean-layout offset ^boolean value))
-  ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
-   (.set segment (.withOrder ^ValueLayout$OfBoolean boolean-layout byte-order) offset ^boolean value)))
-
 (defn write-short
   "Writes a [[short]] to the `segment`, at an optional `offset`.
 
@@ -615,6 +592,7 @@
    (.set segment ^ValueLayout$OfShort short-layout offset ^short value))
   ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
    (.set segment (.withOrder ^ValueLayout$OfShort short-layout byte-order) offset ^short value)))
+
 
 (defn write-int
   "Writes a [[int]] to the `segment`, at an optional `offset`.
@@ -661,6 +639,78 @@
    (.set segment ^ValueLayout$OfLong long-layout offset value))
   (^long [^MemorySegment segment ^long offset ^ByteOrder byte-order ^long value]
    (.set segment (.withOrder ^ValueLayout$OfLong long-layout byte-order) offset value)))
+
+(defn write-bool-8
+  "Writes a [[bool]] of 8 bits (byte size 1) to the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn write-bool-8-inline
+     ([segment value]
+      `(write-byte ~segment (if ~value 1 0)))
+     ([segment offset value]
+      `(write-byte ~segment ~offset (if ~value 1 0))))}
+  ([^MemorySegment segment value]
+   (write-byte segment (if value 1 0)))
+  ([^MemorySegment segment ^long offset value]
+   (write-byte segment offset (if value 1 0))))
+
+(defn write-bool-16
+  "Writes a [[bool]] of 16 bits (byte size 2) to the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn write-bool-16-inline
+     ([segment value]
+      `(write-short ~segment (if ~value 1 0)))
+     ([segment offset value]
+      `(write-short ~segment ~offset (if ~value 1 0)))
+     ([segment value offset byte-order value]
+      `(write-short ~segment ~offset ~byte-order (if ~value 1 0))))}
+  ([^MemorySegment segment value]
+   (write-short segment (if value 1 0)))
+  ([^MemorySegment segment ^long offset value]
+   (write-short segment offset (if value 1 0)))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
+   (write-short segment offset byte-order (if value 1 0))))
+
+(defn write-bool-32
+  "Writes a [[bool]] of 32 bits (byte size 4) to the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn write-bool-32-inline
+     ([segment value]
+      `(write-int ~segment (if ~value 1 0)))
+     ([segment offset value]
+      `(write-int ~segment ~offset (if ~value 1 0)))
+     ([segment value offset byte-order value]
+      `(write-int ~segment ~offset ~byte-order (if ~value 1 0))))}
+  ([^MemorySegment segment value]
+   (write-int segment (if value 1 0)))
+  ([^MemorySegment segment ^long offset value]
+   (write-int segment offset (if value 1 0)))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
+   (write-int segment offset byte-order (if value 1 0))))
+
+(defn write-bool-64
+  "Writes a [[bool]] of 64 bits (byte size 8) to the `segment`, at an optional `offset`.
+
+  If `byte-order` is not provided, it defaults to [[native-endian]]."
+  {:inline
+   (fn write-bool-64inline
+     ([segment value]
+      `(write-long ~segment (if ~value 1 0)))
+     ([segment offset value]
+      `(write-long ~segment ~offset (if ~value 1 0)))
+     ([segment value offset byte-order value]
+      `(write-long ~segment ~offset ~byte-order (if ~value 1 0))))}
+  ([^MemorySegment segment value]
+   (write-long segment (if value 1 0)))
+  ([^MemorySegment segment ^long offset value]
+   (write-long segment offset (if value 1 0)))
+  ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
+   (write-long segment offset byte-order (if value 1 0))))
 
 (defn write-char
   "Writes a [[char]] to the `segment`, at an optional `offset`."
@@ -1359,9 +1409,12 @@
   [obj _type _arena]
   (byte obj))
 
-(defmethod serialize* ::boolean
-  [obj _type _arena]
-  (boolean obj))
+(defmethod serialize* ::bool
+  [obj type _arena]
+  (let [v (if obj 1 0)]
+    (if (sequential? type)
+      (case (second type) 8 (byte v) 16 (short v) 32 (int v) 64 (long v))
+      (throw-illegal-bool!))))
 
 (defmethod serialize* ::short
   [obj _type _arena]
@@ -1432,8 +1485,12 @@
 (defmethod serialize-into ::boolean
   [obj type segment _arena]
   (if (sequential? type)
-    (write-boolean segment 0 (second type) (boolean obj))
-    (write-boolean segment (boolean obj))))
+    (case (second type)
+      8  (write-bool-8 segment obj)
+      16 (write-bool-16 segment obj)
+      32 (write-bool-32 segment obj)
+      64 (write-bool-64 segment obj))
+    (throw-illegal-bool!)))
 
 (defmethod serialize-into ::short
   [obj type segment _arena]
