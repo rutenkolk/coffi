@@ -647,13 +647,13 @@
   {:inline
    (fn write-bool-8-inline
      ([segment value]
-      `(write-byte ~segment (if ~value 1 0)))
+      `(write-byte ~segment (if ~value -1 0)))
      ([segment offset value]
-      `(write-byte ~segment ~offset (if ~value 1 0))))}
+      `(write-byte ~segment ~offset (if ~value -1 0))))}
   ([^MemorySegment segment value]
-   (write-byte segment (if value 1 0)))
+   (write-byte segment (if value -1 0)))
   ([^MemorySegment segment ^long offset value]
-   (write-byte segment offset (if value 1 0))))
+   (write-byte segment offset (if value -1 0))))
 
 (defn write-bool-16
   "Writes a [[bool]] of 16 bits (byte size 2) to the `segment`, at an optional `offset`.
@@ -662,17 +662,17 @@
   {:inline
    (fn write-bool-16-inline
      ([segment value]
-      `(write-short ~segment (if ~value 1 0)))
+      `(write-short ~segment (if ~value -1 0)))
      ([segment offset value]
-      `(write-short ~segment ~offset (if ~value 1 0)))
+      `(write-short ~segment ~offset (if ~value -1 0)))
      ([segment value offset byte-order value]
-      `(write-short ~segment ~offset ~byte-order (if ~value 1 0))))}
+      `(write-short ~segment ~offset ~byte-order (if ~value -1 0))))}
   ([^MemorySegment segment value]
-   (write-short segment (if value 1 0)))
+   (write-short segment (if value -1 0)))
   ([^MemorySegment segment ^long offset value]
-   (write-short segment offset (if value 1 0)))
+   (write-short segment offset (if value -1 0)))
   ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
-   (write-short segment offset byte-order (if value 1 0))))
+   (write-short segment offset byte-order (if value -1 0))))
 
 (defn write-bool-32
   "Writes a [[bool]] of 32 bits (byte size 4) to the `segment`, at an optional `offset`.
@@ -681,17 +681,17 @@
   {:inline
    (fn write-bool-32-inline
      ([segment value]
-      `(write-int ~segment (if ~value 1 0)))
+      `(write-int ~segment (if ~value -1 0)))
      ([segment offset value]
-      `(write-int ~segment ~offset (if ~value 1 0)))
+      `(write-int ~segment ~offset (if ~value -1 0)))
      ([segment value offset byte-order value]
-      `(write-int ~segment ~offset ~byte-order (if ~value 1 0))))}
+      `(write-int ~segment ~offset ~byte-order (if ~value -1 0))))}
   ([^MemorySegment segment value]
-   (write-int segment (if value 1 0)))
+   (write-int segment (if value -1 0)))
   ([^MemorySegment segment ^long offset value]
-   (write-int segment offset (if value 1 0)))
+   (write-int segment offset (if value -1 0)))
   ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
-   (write-int segment offset byte-order (if value 1 0))))
+   (write-int segment offset byte-order (if value -1 0))))
 
 (defn write-bool-64
   "Writes a [[bool]] of 64 bits (byte size 8) to the `segment`, at an optional `offset`.
@@ -700,17 +700,17 @@
   {:inline
    (fn write-bool-64inline
      ([segment value]
-      `(write-long ~segment (if ~value 1 0)))
+      `(write-long ~segment (if ~value -1 0)))
      ([segment offset value]
-      `(write-long ~segment ~offset (if ~value 1 0)))
+      `(write-long ~segment ~offset (if ~value -1 0)))
      ([segment value offset byte-order value]
-      `(write-long ~segment ~offset ~byte-order (if ~value 1 0))))}
+      `(write-long ~segment ~offset ~byte-order (if ~value -1 0))))}
   ([^MemorySegment segment value]
-   (write-long segment (if value 1 0)))
+   (write-long segment (if value -1 0)))
   ([^MemorySegment segment ^long offset value]
-   (write-long segment offset (if value 1 0)))
+   (write-long segment offset (if value -1 0)))
   ([^MemorySegment segment ^long offset ^ByteOrder byte-order value]
-   (write-long segment offset byte-order (if value 1 0))))
+   (write-long segment offset byte-order (if value -1 0))))
 
 (defn write-char
   "Writes a [[char]] to the `segment`, at an optional `offset`."
@@ -1411,7 +1411,7 @@
 
 (defmethod serialize* ::bool
   [obj type _arena]
-  (let [v (if obj 1 0)]
+  (let [v (if obj -1 0)]
     (if (sequential? type)
       (case (second type) 8 (byte v) 16 (short v) 32 (int v) 64 (long v))
       (throw-illegal-bool!))))
