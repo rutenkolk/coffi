@@ -1997,7 +1997,6 @@
 (defmulti  generate-deserialize (fn [& xs] (if (vector? (first xs)) (ffirst xs) (first xs))))
 
 (defmethod generate-deserialize :coffi.mem/byte     [_type offset segment-source-form] `(read-byte    ~segment-source-form ~offset))
-(defmethod generate-deserialize :coffi.mem/boolean  [_type offset segment-source-form] `(read-boolean ~segment-source-form ~offset))
 (defmethod generate-deserialize :coffi.mem/short    [_type offset segment-source-form] `(read-short   ~segment-source-form ~offset))
 (defmethod generate-deserialize :coffi.mem/int      [_type offset segment-source-form] `(read-int     ~segment-source-form ~offset))
 (defmethod generate-deserialize :coffi.mem/long     [_type offset segment-source-form] `(read-long    ~segment-source-form ~offset))
@@ -2007,6 +2006,13 @@
 (defmethod generate-deserialize :coffi.mem/pointer  [_type offset segment-source-form] `(read-address ~segment-source-form ~offset))
 (defmethod generate-deserialize :coffi.mem/c-string [_type offset segment-source-form]
   `(.getString (.reinterpret (.get ~(with-meta segment-source-form {:tag 'java.lang.foreign.MemorySegment}) pointer-layout ~offset) Integer/MAX_VALUE) 0))
+
+(defmethod generate-deserialize ::bool [type offset segment-source-form]
+  (if (sequential? type)
+    `(~(case (long (second type)) 8 `read-bool-8 16 `read-bool-16 32 `read-bool-32 64 `read-bool-64)
+      ~segment-source-form
+      ~offset)
+    (throw-illegal-bool!)))
 
 (defn- generate-deserialize-array-as-array-bulk [array-type n offset segment-source-form]
   (list (coffitype->array-read-fn array-type) segment-source-form n offset))
@@ -2073,7 +2079,6 @@
 (defmulti  generate-serialize (fn [& xs] (if (vector? (first xs)) (ffirst xs) (first xs))))
 
 (defmethod generate-serialize :coffi.mem/byte     [_type source-form offset segment-source-form] `(write-byte    ~segment-source-form ~offset ~source-form))
-(defmethod generate-serialize :coffi.mem/boolean  [_type source-form offset segment-source-form] `(write-boolean ~segment-source-form ~offset ~source-form))
 (defmethod generate-serialize :coffi.mem/short    [_type source-form offset segment-source-form] `(write-short   ~segment-source-form ~offset ~source-form))
 (defmethod generate-serialize :coffi.mem/int      [_type source-form offset segment-source-form] `(write-int     ~segment-source-form ~offset ~source-form))
 (defmethod generate-serialize :coffi.mem/long     [_type source-form offset segment-source-form] `(write-long    ~segment-source-form ~offset ~source-form))
@@ -2082,6 +2087,14 @@
 (defmethod generate-serialize :coffi.mem/double   [_type source-form offset segment-source-form] `(write-double  ~segment-source-form ~offset ~source-form))
 (defmethod generate-serialize :coffi.mem/pointer  [_type source-form offset segment-source-form] `(write-address ~segment-source-form ~offset ~source-form))
 (defmethod generate-serialize :coffi.mem/c-string [_type source-form offset segment-source-form] `(write-address ~segment-source-form ~offset (.allocateFrom (Arena/ofAuto) ~source-form)))
+
+(defmethod generate-serialize ::bool [type source-form offset segment-source-form]
+  (if (sequential? type)
+    `(~(case (long (second type)) 8 `write-bool-8 16 `write-bool-16 32 `write-bool-32 64 `write-bool-64)
+      ~segment-source-form
+      ~offset
+      ~source-form)
+    (throw-illegal-bool!)))
 
 (defn- generate-serialize-array-as-array-bulk [member-type length source-form offset segment-source-form]
   (list (coffitype->array-write-fn member-type) segment-source-form length offset source-form))
