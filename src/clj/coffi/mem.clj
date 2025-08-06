@@ -1227,7 +1227,7 @@
 
 (defmethod primitive-type ::bool [type]
   (if (sequential? type)
-    (case (second type) 8 ::byte 16 ::short 32 ::int 64 ::long)
+    (case (long (second type)) 8 ::byte 16 ::short 32 ::int 64 ::long)
     (throw-illegal-bool!)))
 
 (defmethod primitive-type ::short
@@ -1287,7 +1287,7 @@
 
 (defmethod c-layout ::bool [type]
   (if (sequential? type)
-    (case (second type) 8 byte-layout 16 short-layout 32 int-layout 64 long-layout)
+    (case (long (second type)) 8 byte-layout 16 short-layout 32 int-layout 64 long-layout)
     (throw-illegal-bool!)))
 
 (defmethod c-layout ::short
@@ -1396,7 +1396,7 @@
   [obj type _arena]
   (let [v (if obj -1 0)]
     (if (sequential? type)
-      (case (second type) 8 (byte v) 16 (short v) 32 (int v) 64 (long v))
+      (case (long (second type)) 8 (byte v) 16 (short v) 32 (int v) 64 (long v))
       (throw-illegal-bool!))))
 
 (defmethod serialize* ::short
@@ -1468,7 +1468,7 @@
 (defmethod serialize-into ::boolean
   [obj type segment _arena]
   (if (sequential? type)
-    (case (second type)
+    (case (long (second type))
       8  (write-bool-8 segment obj)
       16 (write-bool-16 segment obj)
       32 (write-bool-32 segment obj)
@@ -1559,7 +1559,7 @@
 (defmethod deserialize-from ::bool
   [segment type]
   (if (sequential? type)
-    (case (second type)
+    (case (long (second type))
       8 (read-bool-8 segment)
       16 (read-bool-16 segment)
       32 (read-bool-32 segment)
