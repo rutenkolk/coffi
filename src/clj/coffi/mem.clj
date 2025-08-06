@@ -1198,7 +1198,7 @@
   [type]
   (contains? primitive-types (type-dispatch type)))
 
-(defn- throw-illegal-bool! [] (throw IllegalArgumentException _ "encountered bool type without explicit size! use e.g. [::mem/bool 8] or [::mem/bool 32] instead."))
+(defn- throw-illegal-bool! [] (throw (IllegalArgumentException. "encountered bool type without explicit size! use e.g. [::mem/bool 8] or [::mem/bool 32] instead.")))
 
 (defmulti primitive-type
   "Gets the primitive type that is used to pass as an argument for the `type`.
@@ -1287,7 +1287,7 @@
 
 (defmethod c-layout ::bool [type]
   (if (sequential? type)
-    (case (second type) 8 mem/byte-layout 16 mem/short-layout 32 mem/int-layout 64 mem/long-layout)
+    (case (second type) 8 byte-layout 16 short-layout 32 int-layout 64 long-layout)
     (throw-illegal-bool!)))
 
 (defmethod c-layout ::short
