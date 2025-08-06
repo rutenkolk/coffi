@@ -1465,7 +1465,7 @@
   [obj _type segment _arena]
   (write-byte segment obj))
 
-(defmethod serialize-into ::boolean
+(defmethod serialize-into ::bool
   [obj type segment _arena]
   (if (sequential? type)
     (case (long (second type))
