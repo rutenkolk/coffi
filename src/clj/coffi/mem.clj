@@ -243,7 +243,7 @@
   ValueLayout/ADDRESS)
 
 (def ^long boolean-size
-  "The size in bytes of a c-sized boolean."
+  "The size in bytes of the layout of a java boolean."
   (.byteSize boolean-layout))
 
 (def ^long short-size
