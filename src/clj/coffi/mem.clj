@@ -811,23 +811,6 @@
   ([^MemorySegment segment n offset ^bytes value]
    (MemorySegment/copy value 0 segment ^ValueLayout$OfByte byte-layout ^long offset ^int n)))
 
-(defn write-booleans
-  "Writes n elements from a [[boolean]] array to the `segment`, at an optional `offset`.
-
-  If `byte-order` is not provided, it defaults to [[native-endian]]."
-  {:inline
-   (fn write-boolean-inline
-     ([segment n value]
-      (once-only [^java.lang.foreign.MemorySegment segment ^booleans value]
-        `(MemorySegment/copy ~value 0 ~segment ^ValueLayout$OfBoolean boolean-layout 0 ~n)))
-     ([segment n offset value]
-      (once-only [^java.lang.foreign.MemorySegment segment ^long offset ^booleans value]
-        `(MemorySegment/copy ~value 0 ~segment ^ValueLayout$OfBoolean boolean-layout ~offset ~n))))}
-  ([^MemorySegment segment n ^booleans value]
-   (MemorySegment/copy value 0 segment ^ValueLayout$OfBoolean boolean-layout 0 ^int n))
-  ([^MemorySegment segment n ^long offset ^booleans value]
-   (MemorySegment/copy value 0 segment ^ValueLayout$OfBoolean boolean-layout ^long offset ^int n)))
-
 (defn write-shorts
   "Writes n elements from a [[short]] array to the `segment`, at an optional `offset`.
 
@@ -1949,23 +1932,29 @@
   (let [[indirect-type type n & {:keys [raw?] :as opts}] (if (vector? in) in [:- in])
         arr? (= indirect-type ::array)
         ptr? (= indirect-type ::pointer)
-        array-types  {::byte     'bytes
-                      ::boolean  'booleans
-                      ::short    'shorts
-                      ::int      'ints
-                      ::long     'longs
-                      ::char     'chars
-                      ::float    'floats
-                      ::double   'doubles}
-        single-types {::byte     'byte
-                      ::boolean  'boolean
-                      ::short    'short
-                      ::int      'int
-                      ::long     'long
-                      ::char     'char
-                      ::float    'float
-                      ::double   'double
-                      ::c-string 'String}]
+        array-types  {::byte      'bytes
+                      [::bool 8]  'booleans
+                      [::bool 16] 'booleans
+                      [::bool 32] 'booleans
+                      [::bool 64] 'booleans
+                      ::short     'shorts
+                      ::int       'ints
+                      ::long      'longs
+                      ::char      'chars
+                      ::float     'floats
+                      ::double    'doubles}
+        single-types {::byte      'byte
+                      [::bool 8]  'boolean
+                      [::bool 16] 'boolean
+                      [::bool 32] 'boolean
+                      [::bool 64] 'boolean
+                      ::short     'short
+                      ::int       'int
+                      ::long      'long
+                      ::char      'char
+                      ::float     'float
+                      ::double    'double
+                      ::c-string  'String}]
     (cond (and arr? raw?) (get array-types type 'objects)
           (and arr?)      `clojure.lang.IPersistentVector
           (and ptr?)      `java.lang.foreign.MemorySegment
@@ -1974,7 +1963,10 @@
 (defn- coffitype->array-fn [type]
   (get
    {:coffi.mem/byte    `byte-array
-    :coffi.mem/boolean `boolean-array
+    [::bool 8]         `boolean-array
+    [::bool 16]        `boolean-array
+    [::bool 32]        `boolean-array
+    [::bool 64]        `boolean-array
     :coffi.mem/short   `short-array
     :coffi.mem/int     `int-array
     :coffi.mem/long    `long-array
@@ -1986,7 +1978,6 @@
 
 (defn- coffitype->array-write-fn [type]
   ({:coffi.mem/byte    `write-bytes
-    :coffi.mem/boolean `write-booleans
     :coffi.mem/short   `write-shorts
     :coffi.mem/int     `write-ints
     :coffi.mem/long    `write-longs
@@ -1996,7 +1987,6 @@
 
 (defn- coffitype->array-read-fn [type]
   ({:coffi.mem/byte    `read-bytes
-    :coffi.mem/boolean `read-shorts
     :coffi.mem/short   `read-shorts
     :coffi.mem/int     `read-ints
     :coffi.mem/long    `read-longs
