@@ -1221,10 +1221,6 @@
   [_type]
   ::byte)
 
-(defmethod primitive-type ::boolean
-  [_type]
-  ::boolean)
-
 (defmethod primitive-type ::bool [type]
   (if (sequential? type)
     (case (long (second type)) 8 ::byte 16 ::short 32 ::int 64 ::long)
@@ -1279,12 +1275,6 @@
   [_type]
   byte-layout)
 
-(defmethod c-layout ::boolean
-  [type]
-  (if (sequential? type)
-    (.withOrder boolean-layout ^ByteOrder (second type))
-    boolean-layout))
-
 (defmethod c-layout ::bool [type]
   (if (sequential? type)
     (case (long (second type)) 8 byte-layout 16 short-layout 32 int-layout 64 long-layout)
@@ -1331,10 +1321,13 @@
 (def java-prim-layout
   "Map of primitive type names to the Java types for a method handle."
   {::byte Byte/TYPE
-   ::boolean Boolean/TYPE
    ::short Short/TYPE
    ::int Integer/TYPE
    ::long Long/TYPE
+   [::bool 8] Byte/TYPE
+   [::bool 16] Short/TYPE
+   [::bool 32] Integer/TYPE
+   [::bool 64] Long/TYPE
    ::char Byte/TYPE
    ::float Float/TYPE
    ::double Double/TYPE
