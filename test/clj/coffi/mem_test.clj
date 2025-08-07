@@ -133,3 +133,53 @@
       (mem/serialize ::ComplexTestTypeWrapped)
       (mem/deserialize ::ComplexTestTypeWrapped)))))
 
+(t/deftest can-serialize-false-to-bool
+  (t/is
+   (= 0
+      (mem/serialize nil [::mem/bool 8])
+      (mem/serialize false [::mem/bool 16])
+      (mem/serialize nil [::mem/bool 32])
+      (mem/serialize false [::mem/bool 64]))))
+
+(t/deftest can-serialize-true-to-bool
+  (t/is
+   (= -1
+      (mem/serialize :true [::mem/bool 8])
+      (mem/serialize true [::mem/bool 16])
+      (mem/serialize 1000 [::mem/bool 32])
+      (mem/serialize "str" [::mem/bool 64]))))
+
+(t/deftest can-serialize-into-bool
+  (t/is
+   (let [bool-8-segment (mem/alloc-instance [::mem/bool 8])
+         bool-16-segment (mem/alloc-instance [::mem/bool 16])
+         bool-32-segment (mem/alloc-instance [::mem/bool 32])
+         bool-64-segment (mem/alloc-instance [::mem/bool 64])
+
+         _ (mem/serialize-into :true [::mem/bool 8]  bool-8-segment  nil)
+         _ (mem/serialize-into true  [::mem/bool 16] bool-16-segment nil)
+         _ (mem/serialize-into 1000  [::mem/bool 32] bool-32-segment nil)
+         _ (mem/serialize-into "str" [::mem/bool 64] bool-64-segment nil)
+         ]
+     (= -1
+        (mem/read-byte bool-8-segment)
+        (mem/read-short bool-16-segment)
+        (mem/read-int bool-32-segment)
+        (mem/read-long bool-64-segment)))))
+
+(t/deftest can-deserialize-from-bool
+  (t/is
+   (let [bool-8-segment (mem/alloc-instance [::mem/bool 8])
+         bool-16-segment (mem/alloc-instance [::mem/bool 16])
+         bool-32-segment (mem/alloc-instance [::mem/bool 32])
+         bool-64-segment (mem/alloc-instance [::mem/bool 64])
+
+         _ (mem/write-byte bool-8-segment 1)
+         _ (mem/write-short bool-16-segment -1)
+         _ (mem/write-int bool-32-segment 0)
+         _ (mem/write-long bool-64-segment 42)]
+     (= true
+        (mem/deserialize-from bool-8-segment [::mem/bool 8])
+        (mem/deserialize-from bool-16-segment [::mem/bool 16])
+        (not (mem/deserialize-from bool-32-segment [::mem/bool 32]))
+        (mem/deserialize-from bool-64-segment [::mem/bool 64])))))
