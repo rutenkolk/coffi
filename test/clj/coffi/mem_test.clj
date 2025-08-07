@@ -183,3 +183,10 @@
         (mem/deserialize-from bool-16-segment [::mem/bool 16])
         (not (mem/deserialize-from bool-32-segment [::mem/bool 32]))
         (mem/deserialize-from bool-64-segment [::mem/bool 64])))))
+
+(t/deftest unsized-bool-throws
+  (t/is
+   (and
+    (try (mem/alloc-instance ::mem/bool) false (catch Exception _ true))
+    (try (mem/serialize :test ::mem/bool) false (catch Exception _ true)))))
+

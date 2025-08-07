@@ -23,6 +23,12 @@
     (= true ((ffi/cfn "add_numbers" [::mem/int ::mem/int] [::mem/bool 32]) 2 2))
     (= false ((ffi/cfn "add_numbers" [::mem/int ::mem/int] [::mem/bool 32]) 2 -2)))))
 
+(t/deftest unsized-bool-function-throws
+  (t/is
+   (and
+    (try ((ffi/cfn "add_numbers" [::mem/int ::mem/bool] ::mem/int) 2 :truthy) false (catch Exception _ true))
+    (try ((ffi/cfn "add_numbers" [::mem/int ::mem/int] ::mem/bool) 2 2) false (catch Exception _ true)))))
+
 (mem/defalias ::point
   [::mem/struct
    [[:x ::mem/float]
