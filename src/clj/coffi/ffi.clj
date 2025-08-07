@@ -240,7 +240,6 @@
   "Map from non-pointer primitive types to functions that cast to the appropriate
   java primitive."
   {::mem/byte `byte
-   ::mem/boolean `boolean
    ::mem/short `short
    ::mem/int `int
    ::mem/long `long
@@ -468,7 +467,10 @@
 (def ^:private return-for-type
   "Map from type name to the return instruction for that type."
   {::mem/byte :breturn
-   ::mem/boolean :ireturn
+   [::mem/bool 8] :ireturn
+   [::mem/bool 16] :ireturn
+   [::mem/bool 32] :ireturn
+   [::mem/bool 64] :lreturn
    ::mem/short :sreturn
    ::mem/int :ireturn
    ::mem/long :lreturn

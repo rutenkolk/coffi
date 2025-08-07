@@ -299,7 +299,7 @@
   (.byteAlignment pointer-layout))
 
 (def ^:private primitive-tag?
-  '#{byte boolean bytes short shorts int ints long longs
+  '#{byte bytes short shorts int ints long longs
      float floats double doubles
      bool bools char chars})
 
@@ -1190,7 +1190,7 @@
 
 (def primitive-types
   "A set of all primitive types."
-  #{::byte ::boolean ::short ::int ::long
+  #{::byte ::bool ::short ::int ::long
     ::char ::float ::double ::pointer})
 
 (defn primitive?
