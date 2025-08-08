@@ -1955,37 +1955,37 @@
 
 (defn- coffitype->array-fn [type]
   (get
-   {:coffi.mem/byte    `byte-array
-    [::bool 8]         `boolean-array
-    [::bool 16]        `boolean-array
-    [::bool 32]        `boolean-array
-    [::bool 64]        `boolean-array
-    :coffi.mem/short   `short-array
-    :coffi.mem/int     `int-array
-    :coffi.mem/long    `long-array
-    :coffi.mem/char    `char-array
-    :coffi.mem/float   `float-array
-    :coffi.mem/double  `double-array}
+   {:coffi.mem/byte   `byte-array
+    [::bool 8]        `boolean-array
+    [::bool 16]       `boolean-array
+    [::bool 32]       `boolean-array
+    [::bool 64]       `boolean-array
+    :coffi.mem/short  `short-array
+    :coffi.mem/int    `int-array
+    :coffi.mem/long   `long-array
+    :coffi.mem/char   `char-array
+    :coffi.mem/float  `float-array
+    :coffi.mem/double `double-array}
    type
    `object-array))
 
 (defn- coffitype->array-write-fn [type]
-  ({:coffi.mem/byte    `write-bytes
-    :coffi.mem/short   `write-shorts
-    :coffi.mem/int     `write-ints
-    :coffi.mem/long    `write-longs
-    :coffi.mem/char    `write-chars
-    :coffi.mem/float   `write-floats
-    :coffi.mem/double  `write-doubles} type))
+  ({:coffi.mem/byte   `write-bytes
+    :coffi.mem/short  `write-shorts
+    :coffi.mem/int    `write-ints
+    :coffi.mem/long   `write-longs
+    :coffi.mem/char   `write-chars
+    :coffi.mem/float  `write-floats
+    :coffi.mem/double `write-doubles} type))
 
 (defn- coffitype->array-read-fn [type]
-  ({:coffi.mem/byte    `read-bytes
-    :coffi.mem/short   `read-shorts
-    :coffi.mem/int     `read-ints
-    :coffi.mem/long    `read-longs
-    :coffi.mem/char    `read-chars
-    :coffi.mem/float   `read-floats
-    :coffi.mem/double  `read-doubles} type))
+  ({:coffi.mem/byte   `read-bytes
+    :coffi.mem/short  `read-shorts
+    :coffi.mem/int    `read-ints
+    :coffi.mem/long   `read-longs
+    :coffi.mem/char   `read-chars
+    :coffi.mem/float  `read-floats
+    :coffi.mem/double `read-doubles} type))
 
 (defmulti  generate-deserialize (fn [& xs] (if (vector? (first xs)) (ffirst xs) (first xs))))
 
