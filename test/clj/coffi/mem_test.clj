@@ -1,6 +1,7 @@
 (ns coffi.mem-test
   (:require
    [clojure.test :as t]
+   [clojure.set :as s]
    [coffi.ffi :as ffi]
    [coffi.mem :as mem])
   (:import
@@ -183,6 +184,18 @@
         (mem/deserialize-from bool-16-segment [::mem/bool 16])
         (not (mem/deserialize-from bool-32-segment [::mem/bool 32]))
         (mem/deserialize-from bool-64-segment [::mem/bool 64])))))
+
+(t/deftest bool-array-serializes
+  (t/is
+   (and
+    (= (s/union (set (range 0 8)) (set (range 16 24)))
+       (mem/deserialize-from
+        (mem/serialize [true false true false] [::mem/array [::mem/bool 8] 4])
+        [::mem/flagset (vec (range 32))]))
+    (= (set (range 16 32))
+       (mem/deserialize-from
+        (mem/serialize [false true] [::mem/array [::mem/bool 16] 2])
+        [::mem/flagset (vec (range 32))])))))
 
 (t/deftest unsized-bool-throws
   (t/is
